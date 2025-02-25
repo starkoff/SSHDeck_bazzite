@@ -1,8 +1,0 @@
-#!/usr/bin/env xdg-open
-[Desktop Entry]
-Name=Install EmuDeck
-Exec=curl https://raw.githubusercontent.com/starkoff/SSHDeck_bazzite/main/bin/Install.sh | bash -s -- INTERNAL
-Icon=steamdeck-gaming-return
-Terminal=true
-Type=Application
-StartupNotify=false
