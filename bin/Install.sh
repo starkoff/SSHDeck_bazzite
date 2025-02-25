@@ -74,7 +74,9 @@ chmod +x "${USER_HOME}/SSHToggle/ToggleSSH.sh"
 
 # Загрузка иконки на рабочий стол
 echo "Downloading Desktop shortcut..."
-curl -L https://raw.githubusercontent.com/starkoff/SSHDeck_bazzite/main/bin/ToggleSSH.desktop -o "${USER_HOME}/Desktop/ToggleSSH.desktop"
+curl -L https://raw.githubusercontent.com/starkoff/SSHDeck_bazzite/main/bin/ToggleSSH.desktop | \
+    sed "s|TOGGLE_SCRIPT_PATH|${USER_HOME}/SSHToggle/ToggleSSH.sh|g" > \
+    "${USER_HOME}/Desktop/ToggleSSH.desktop"
 chmod +x "${USER_HOME}/Desktop/ToggleSSH.desktop"
 
 # Финальные инструкции
