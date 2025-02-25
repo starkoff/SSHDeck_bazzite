@@ -93,7 +93,7 @@ fi
 TRAP_ENABLED=true
 
 # Show connection info
-message=$(printf "SSH server is running. Sleep mode disabled.\n\nIPv4 addresses: %s\nIPv6 addresses: %s\n\nPort: 22\nUsername: sdcard/deck\n\nClose window to stop SSH" "$ip4" "$ip6")
+message=$(printf "SSH server is running. Sleep mode disabled.\n\nIPv4 addresses: %s\nIPv6 addresses: %s\n\nPort: 22\nUsername: sdcard or deck\n\nClose window to stop SSH" "$ip4" "$ip6")
 zenity --info --title="SSH Server Status" --text="$message" --no-wrap --ok-label="Stop SSH"
 
 cleanup
