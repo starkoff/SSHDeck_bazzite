@@ -24,7 +24,7 @@ nano ~/SSHToggle/ToggleSSH.sh
 ```
 2. Измените строку:
 ```bash
-PASSWORD=""DEFAULT_EMPTY_VALUE"" → PASSWORD=""your_deck_password""
+PASSWORD="DEFAULT_EMPTY_VALUE" → PASSWORD="your_deck_password"
 ```
 
 ## Использование
@@ -89,8 +89,8 @@ nano ~/SSHToggle/ToggleSSH.sh
 ```
 2. Update line:
 ```diff
-- PASSWORD=""DEFAULT_EMPTY_VALUE""
-+ PASSWORD=""your_actual_password""
+- PASSWORD="DEFAULT_EMPTY_VALUE"
++ PASSWORD="your_actual_password"
 ```
 
 ## Usage
