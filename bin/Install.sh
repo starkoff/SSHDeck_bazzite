@@ -1,46 +1,55 @@
 #!/bin/bash
 
-# Revert to the backup, remove user
+# Определение домашней директории целевого пользователя
+if [ -n "$SUDO_USER" ]; then
+    USER_HOME=$(eval echo ~$SUDO_USER)
+else
+    USER_HOME=$HOME
+fi
+
+# Revert to the backup, remove user (раскомментируйте при необходимости)
 #\cp /etc/ssh/sshd_config.backup /etc/ssh/sshd_config
 #userdel -r sdcard
 #groupdel sdcard
 
-#Backup file, if the backup doesn't exist
+# Backup файла sshd_config, если бэкап не существует
 FILE="/etc/ssh/sshd_config.backup"
 if [ ! -f "$FILE" ]; then
     cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
+    echo "Created backup of sshd_config."
 else
     echo "sshd_config is already backed up."
 fi
 
-# Create the group, if it does not exist.
+# Создание группы sdcard
 if grep -q -E "^sdcard:" /etc/group; then
     echo "sdcard group already exists."
 else
     groupadd sdcard
     chgrp -R sdcard /run/media
+    echo "Created sdcard group."
 fi
 
-# Create the user, if it does not exist.
+# Создание пользователя sdcard
 if id "sdcard" &>/dev/null; then
     echo 'User "sdcard" already exists.'
 else
     useradd --home-dir /run/media/ --shell /bin/bash -g sdcard sdcard
     passwd -d sdcard
+    echo 'Created sdcard user.'
 fi
 
-# Setup chroot jail for user.
-if grep -Fxq "Match user sdcard" /etc/ssh/sshd_config
-then
-    echo 'sshd_config already contains text needed for chroot jail.'
+# Настройка chroot jail
+if grep -Fxq "Match user sdcard" /etc/ssh/sshd_config; then
+    echo 'sshd_config already contains chroot jail settings.'
 else
-    # Comment out the line "Subsystem	sftp	/usr/lib/ssh/sftp-server"
-    sed -i 's/Subsystem	sftp	\/usr\/lib\/ssh\/sftp-server/#Subsystem	sftp	\/usr\/lib\/ssh\/sftp-server/g' /etc/ssh/sshd_config
+    # Комментируем старую директиву Subsystem
+    sed -i 's/Subsystem\tsftp\s\/usr\/lib\/ssh\/sftp-server/#Subsystem\tsftp\t\/usr\/lib\/ssh\/sftp-server/g' /etc/ssh/sshd_config
 
-    # Add the information below so that the sdcard user is confined to /run/media, cannot navigate elsewhere.
+    # Добавляем новые настройки
+    echo -e "\n# SSHDeck_bazzite configuration" >> /etc/ssh/sshd_config
     echo 'Subsystem	sftp	internal-sftp' >> /etc/ssh/sshd_config
     echo '' >> /etc/ssh/sshd_config
-    echo '#Add this section to match for user "sdcard"' >> /etc/ssh/sshd_config
     echo 'Match user sdcard' >> /etc/ssh/sshd_config
     echo '	ChrootDirectory /run/media' >> /etc/ssh/sshd_config
     echo '	X11Forwarding no' >> /etc/ssh/sshd_config
@@ -50,15 +59,27 @@ else
     echo '	ForceCommand internal-sftp' >> /etc/ssh/sshd_config
     echo '	PasswordAuthentication yes' >> /etc/ssh/sshd_config
     echo '	PermitEmptyPasswords yes' >> /etc/ssh/sshd_config
+    echo 'Added chroot jail configuration to sshd_config.'
 fi
 
-# Create folder if it doesn't exist
-mkdir -p /home/deck/SSHToggle
+# Создание директорий и загрузка файлов
+echo "Creating directories in ${USER_HOME}..."
+mkdir -p "${USER_HOME}/SSHToggle"
+mkdir -p "${USER_HOME}/Desktop"
 
-# Pull the ToggleSSH.sh
-curl --create-dirs -O --output-dir /home/deck/SSHToggle https://raw.githubusercontent.com/starkoff/SSHDeck_bazzite/main/bin/ToggleSSH.sh
-chmod +x "/home/deck/SSHToggle/ToggleSSH.sh"
+# Загрузка ToggleSSH.sh
+echo "Downloading ToggleSSH.sh..."
+curl -L https://raw.githubusercontent.com/starkoff/SSHDeck_bazzite/main/bin/ToggleSSH.sh -o "${USER_HOME}/SSHToggle/ToggleSSH.sh"
+chmod +x "${USER_HOME}/SSHToggle/ToggleSSH.sh"
 
-# Pull the Desktop icon
-curl --create-dirs -O --output-dir /home/deck/Desktop https://raw.githubusercontent.com/starkoff/SSHDeck_bazzite/main/bin/ToggleSSH.desktop
-chmod +x "/home/deck/Desktop/ToggleSSH.desktop"
+# Загрузка иконки на рабочий стол
+echo "Downloading Desktop shortcut..."
+curl -L https://raw.githubusercontent.com/starkoff/SSHDeck_bazzite/main/bin/ToggleSSH.desktop -o "${USER_HOME}/Desktop/ToggleSSH.desktop"
+chmod +x "${USER_HOME}/Desktop/ToggleSSH.desktop"
+
+# Финальные инструкции
+echo -e "\nInstallation complete!"
+echo "ToggleSSH.sh saved to: ${USER_HOME}/SSHToggle/"
+echo "Desktop shortcut saved to: ${USER_HOME}/Desktop/"
+echo -e "\nRestart SSH service when ready:"
+echo "sudo systemctl restart sshd"
