@@ -6,7 +6,7 @@
 ## Установка
 **Одной командой (рекомендуется):**
 ```bash
-sudo bash -c ""$(curl -L https://raw.githubusercontent.com/starkoff/SSHDeck_bazzite/main/bin/Install.sh)""
+sudo bash -c "$(curl -L https://raw.githubusercontent.com/starkoff/SSHDeck_bazzite/main/bin/Install.sh)"
 ```
 
 **Что произойдет:**
@@ -70,7 +70,7 @@ Temporary SSH access with chroot confinement for secure file transfers via [WinS
 ## Installation
 ### One-Command Install
 ```bash
-sudo bash -c ""$(curl -L https://raw.githubusercontent.com/starkoff/SSHDeck_bazzite/main/bin/Install.sh)""
+sudo bash -c "$(curl -L https://raw.githubusercontent.com/starkoff/SSHDeck_bazzite/main/bin/Install.sh)"
 ```
 
 ### What This Does:
