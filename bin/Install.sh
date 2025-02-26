@@ -14,6 +14,7 @@ get_password() {
     echo
     echo "$PASSWORD" > "$PASSWORD_FILE"
     chmod 600 "$PASSWORD_FILE"
+    chown $(id -u):$(id -g) "$PASSWORD_FILE"
   fi
 }
 
