@@ -89,7 +89,7 @@ ip -brief address show
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Bazzite Compatible](https://img.shields.io/badge/Bazzite-Supported-success)](https://github.com/ublue-os/bazzite)
-[![SteamOS Verified](https://img.shields.io/badge/Steam_Deck-Verified-blue)](https://store.steampowered.com/steamos)
+[![SteamOS Verified](https://img.shields.io/badge/Steam_Deck-Supported-blue)](https://store.steampowered.com/steamos)
 
 - 
 - 
@@ -196,4 +196,4 @@ ip -brief address show
 ---
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Bazzite Compatible](https://img.shields.io/badge/Bazzite-Supported-success)](https://github.com/ublue-os/bazzite)
-[![SteamOS Verified](https://img.shields.io/badge/Steam_Deck-Verified-blue)](https://store.steampowered.com/steamos)
+[![SteamOS Verified](https://img.shields.io/badge/Steam_Deck-Supported-blue)](https://store.steampowered.com/steamos)
