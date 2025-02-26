@@ -24,7 +24,6 @@ sudo bash -c "$(curl -L https://raw.githubusercontent.com/starkoff/SSHDeck_bazzi
 ### ⚠️ Меры защиты
 - Chroot-тюрьма для пользователя `sdcard`
 - SSH-сессия длится только пока открыто окно
-- Нулевые права root
 - Автоматический бэкап конфигов
 
 ## 📁 Использование с WinSCP/FileZilla
@@ -38,14 +37,12 @@ sudo bash -c "$(curl -L https://raw.githubusercontent.com/starkoff/SSHDeck_bazzi
 
 ## ⚙️ Дополнительные настройки
 ### Парольная аутентификация
-1. Откройте файл:
+1. Откройте файл с паролем:
 ```bash
-nano ~/SSHToggle/ToggleSSH.sh
+nano ~/SSHToggle/.pass
 ```
-2. Замените значение:
-```bash
-PASSWORD="DEFAULT_EMPTY_VALUE" → PASSWORD="ваш_пароль"
-```
+2. Введите новый пароль (первая строка файла)
+3. Сохраните изменения (Ctrl+O → Enter → Ctrl+X)
 
 ### Смена порта SSH
 1. Отредактируйте конфиг:
@@ -75,6 +72,11 @@ bin/
 **Q: Как проверить статус SSH?**
 ```bash
 systemctl status sshd
+```
+
+**Q: Как сбросить пароль?**
+```bash
+echo "ваш_новый_пароль" > ~/SSHToggle/.pass && chmod 600 ~/SSHToggle/.pass
 ```
 
 **Q: Работает ли на Bazzite?**
@@ -141,15 +143,12 @@ Protocol = SFTP
 
 ## ⚙️ Advanced Configuration
 ### Password Authentication
-1. Edit the script:
+1. Open the password file:
 ```bash
-nano ~/SSHToggle/ToggleSSH.sh
+nano ~/SSHToggle/.pass
 ```
-2. Modify:
-```diff
-- PASSWORD="DEFAULT_EMPTY_VALUE"
-+ PASSWORD="your_deck_password"
-```
+2. Enter a new password (first line of the file)
+3. Save changes (Ctrl+O → Enter → Ctrl+X)
 
 ### Port Modification
 1. Edit config:
