@@ -97,7 +97,7 @@ ip -brief address show
 -------------- 
 # Steam Deck SSH Server: Secure Setup Guide for Bazzite and SteamOS
 
-**Temporary SSH Access with Auto-Disabling Feature  **
+**Temporary SSH Access with Auto-Disabling Feature**
 
 ## 🔍 Top Search Keywords
 - How to setup SSH on Steam Deck
