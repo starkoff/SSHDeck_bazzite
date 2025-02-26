@@ -71,7 +71,6 @@ main() {
   # Install control script
   sudo curl -sL https://raw.githubusercontent.com/starkoff/SSHDeck_bazzite/main/bin/ToggleSSH.sh \
     -o "$CONFIG_DIR/ToggleSSH.sh"
-  sudo sed -i "s|PASSWORD=\"DEFAULT\"|PASSWORD=\"$PASSWORD\"|g" "$CONFIG_DIR/ToggleSSH.sh"
   sudo chmod +x "$CONFIG_DIR/ToggleSSH.sh"
 
   # Install desktop icon
