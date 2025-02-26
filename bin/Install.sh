@@ -13,8 +13,8 @@ get_password() {
     read -s PASSWORD
     echo
     echo "$PASSWORD" > "$PASSWORD_FILE"
-    chmod 600 "$PASSWORD_FILE"
     chown "$SUDO_USER:$SUDO_USER" "$PASSWORD_FILE"
+    chmod 600 "$PASSWORD_FILE"
   fi
 }
 
