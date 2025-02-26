@@ -1,83 +1,87 @@
 #!/bin/bash
 
-# Определение домашней директории
 USER_HOME=$( [ -n "$SUDO_USER" ] && eval echo ~$SUDO_USER || echo $HOME )
+CONFIG_DIR="$USER_HOME/SSHToggle"
+PASSWORD_FILE="$CONFIG_DIR/.pass"
 
-# SFTP path detection для мультидистрибутивности
-SFTP_PATH=$(which sftp-server 2>/dev/null || {
-  [ -f "/usr/lib/ssh/sftp-server" ] && echo "/usr/lib/ssh/sftp-server" || echo "/usr/libexec/openssh/sftp-server"
-})
+get_password() {
+  mkdir -p "$CONFIG_DIR"
+  if [ -f "$PASSWORD_FILE" ]; then
+    PASSWORD=$(cat "$PASSWORD_FILE")
+  else
+    echo -n "Enter deck user password (press Enter for no password): "
+    read -s PASSWORD
+    echo
+    echo "$PASSWORD" > "$PASSWORD_FILE"
+    chmod 600 "$PASSWORD_FILE"
+  fi
+}
 
-# Backup sshd_config
-if [ ! -f /etc/ssh/sshd_config.backup ]; then
-    cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
-    echo "Created backup of sshd_config."
-else
-    echo "sshd_config backup already exists."
-fi
+configure_sshd() {
+  local sftp_path=$({
+    [ -x "/usr/lib/ssh/sftp-server" ] && echo "/usr/lib/ssh/sftp-server" ||
+    [ -x "/usr/libexec/openssh/sftp-server" ] && echo "/usr/libexec/openssh/sftp-server"
+  } | head -1)
 
-# Настройка группы и пользователя
-if ! grep -q -E "^sdcard:" /etc/group; then
-    groupadd sdcard
-    chgrp -R sdcard /run/media
-    echo "Created sdcard group."
-    [[ $(getent group sdcard) ]] || { echo "Group creation failed!"; exit 1; }
-fi
+  sudo sed -i "s|Subsystem[[:space:]]*sftp[[:space:]]*$sftp_path|#&|g" /etc/ssh/sshd_config
+  grep -q "Subsystem.sftp.internal-sftp" /etc/ssh/sshd_config || \
+    echo "Subsystem sftp internal-sftp" | sudo tee -a /etc/ssh/sshd_config >/dev/null
 
-if ! id "sdcard" &>/dev/null; then
-    useradd --home-dir /run/media/ --shell /bin/bash -g sdcard sdcard
-    passwd -d sdcard
-    [[ $(id sdcard) ]] || { echo "User creation failed!"; exit 1; }
-fi
+  if ! grep -q "Match User sdcard" /etc/ssh/sshd_config; then
+    sudo tee -a /etc/ssh/sshd_config >/dev/null <<EOF
 
-# Chroot jail configuration
-if ! grep -Fxq "Match User sdcard" /etc/ssh/sshd_config; then
-    sed -i "s|Subsystem[[:space:]]*sftp[[:space:]]*$SFTP_PATH|#&\nSubsystem\tsftp\tinternal-sftp|g" /etc/ssh/sshd_config
-
-    echo -e "\n# SSHDeck configuration" >> /etc/ssh/sshd_config
-    cat <<EOF >> /etc/ssh/sshd_config
+# SSHDeck Configuration
 Match User sdcard
     ChrootDirectory /run/media
+    ForceCommand internal-sftp
+    PasswordAuthentication yes
+    PermitEmptyPasswords yes
     X11Forwarding no
     AllowTcpForwarding no
     PermitTunnel no
     AllowAgentForwarding no
-    ForceCommand internal-sftp
-    PasswordAuthentication yes
-    PermitEmptyPasswords yes
 EOF
+  fi
+}
 
-    # SELinux context для Bazzite
-    if command -v semanage &>/dev/null; then
-        if ! semanage fcontext -a -t ssh_home_t "/run/media(/.*)?" 2>/dev/null; then
-            echo "SELinux: Failed to add context, trying restorecon..."
-            restorecon -Rv /run/media
-        fi
-    fi
+main() {
+  # Backup SSH config
+  sudo cp -n /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
 
-    echo "Added chroot jail configuration."
-fi
+  # Create sdcard group
+  sudo getent group sdcard >/dev/null || {
+    sudo groupadd sdcard
+    sudo chgrp sdcard /run/media
+  }
 
-# Делегирование прав для Steam Deck
-if [ -d "/home/deck" ]; then
-    usermod -aG sdcard deck
-    chmod 770 /run/media
-fi
+  # Create sdcard user
+  sudo id sdcard &>/dev/null || {
+    sudo useradd --home-dir /run/media --shell /bin/bash -g sdcard sdcard
+    sudo passwd -d sdcard
+  }
 
-# File deployment
-mkdir -p ${USER_HOME}/SSHToggle ${USER_HOME}/Desktop
-curl -L https://raw.githubusercontent.com/starkoff/SSHDeck_bazzite/main/bin/ToggleSSH.sh -o ${USER_HOME}/SSHToggle/ToggleSSH.sh
-chmod +x ${USER_HOME}/SSHToggle/ToggleSSH.sh
+  # Configure permissions
+  sudo chmod 755 /run/media
+  id deck &>/dev/null && sudo usermod -aG sdcard deck
 
-curl -L https://raw.githubusercontent.com/starkoff/SSHDeck_bazzite/main/bin/ToggleSSH.desktop | \
-    sed "s|TOGGLE_SCRIPT_PATH|${USER_HOME}/SSHToggle/ToggleSSH.sh|g" > \
-    ${USER_HOME}/Desktop/ToggleSSH.desktop
-chmod +x ${USER_HOME}/Desktop/ToggleSSH.desktop
+  # Get password and configure SSH
+  get_password
+  configure_sshd
 
-# Final checks
-if ! systemctl is-active sshd &>/dev/null; then
-    systemctl start sshd
-    systemctl enable sshd
-fi
+  # Install control script
+  sudo curl -sL https://raw.githubusercontent.com/starkoff/SSHDeck_bazzite/main/bin/ToggleSSH.sh \
+    -o "$CONFIG_DIR/ToggleSSH.sh"
+  sudo sed -i "s|PASSWORD=\"DEFAULT\"|PASSWORD=\"$PASSWORD\"|g" "$CONFIG_DIR/ToggleSSH.sh"
+  sudo chmod +x "$CONFIG_DIR/ToggleSSH.sh"
 
-echo -e "\nInstallation success! Reboot or run: sudo systemctl restart sshd"
+  # Install desktop icon
+  sudo curl -sL https://raw.githubusercontent.com/starkoff/SSHDeck_bazzite/main/bin/ToggleSSH.desktop \
+    | sed "s|TOGGLE_SCRIPT_PATH|$CONFIG_DIR/ToggleSSH.sh|g" \
+    > "$USER_HOME/Desktop/ToggleSSH.desktop"
+  sudo chmod +x "$USER_HOME/Desktop/ToggleSSH.desktop"
+
+  sudo systemctl restart sshd
+  echo -e "\nInstallation complete! Control icon: $USER_HOME/Desktop/ToggleSSH.desktop"
+}
+
+main
