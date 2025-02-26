@@ -1,7 +1,16 @@
 #!/bin/bash
 MYDIR="$(dirname "$(readlink -f "$0")")"
-PASSWORD="DEFAULT_EMPTY_VALUE"
+PASSWORD_FILE="$MYDIR/.pass"
 TRAP_ENABLED=false
+
+# Read stored password
+read_password() {
+    if [[ -f "$PASSWORD_FILE" && -s "$PASSWORD_FILE" ]]; then
+        PASSWORD=$(cat "$PASSWORD_FILE")
+    else
+        PASSWORD="DEFAULT_EMPTY_VALUE"
+    fi
+}
 
 cleanup() {
     if $TRAP_ENABLED; then
@@ -39,6 +48,9 @@ cleanup() {
 
 trap cleanup EXIT INT TERM HUP
 
+# Initial password load
+read_password
+
 # Get IP addresses (exclude localhost)
 ip4=$(/sbin/ip -o -4 addr show | awk '{print $4}' | cut -d/ -f1 | grep -v '^127\.0\.0\.1$' | sort -u | tr '\n' ' ')
 ip6=$(/sbin/ip -o -6 addr show | awk '{print $4}' | cut -d/ -f1 | grep -v '^::1$' | sort -u | tr '\n' ' ')
@@ -50,22 +62,34 @@ else
     HASPASSWORD=true
 fi
 
-# Request password if needed
-if $HASPASSWORD && [ "$PASSWORD" == "DEFAULT_EMPTY_VALUE" ]; then
-    while true; do
-        PASSWORD=$(zenity --password --title="sudo Password" --text="Enter your sudo password:")
-        if [[ -z "$PASSWORD" ]]; then
-            zenity --error --text="Password cannot be empty!"
+# Password validation logic
+if $HASPASSWORD; then
+    if [[ "$PASSWORD" == "DEFAULT_EMPTY_VALUE" ]]; then
+        # No stored password - prompt user
+        while true; do
+            PASSWORD=$(zenity --password --title="sudo Password" --text="Enter your sudo password:")
+            if [[ -z "$PASSWORD" ]]; then
+                zenity --error --text="Password cannot be empty!"
+                continue
+            fi
+            
+            if echo "$PASSWORD" | sudo -S true 2>/dev/null; then
+                echo "$PASSWORD" > "$PASSWORD_FILE"
+                chmod 600 "$PASSWORD_FILE"
+                break
+            else
+                zenity --error --text="Wrong password!"
+            fi
+        done
+    else
+        # Verify stored password
+        if ! echo "$PASSWORD" | sudo -S true 2>/dev/null; then
+            zenity --error --text="Stored password invalid! Please re-enter."
+            rm -f "$PASSWORD_FILE"
+            PASSWORD="DEFAULT_EMPTY_VALUE"
             exit 1
         fi
-        
-        # Validate password
-        if ! echo "$PASSWORD" | sudo -S true 2>/dev/null; then
-            zenity --error --text="Wrong password!"
-            continue
-        fi
-        break
-    done
+    fi
 fi
 
 # Start SSH and disable sleep
@@ -93,7 +117,7 @@ fi
 TRAP_ENABLED=true
 
 # Show connection info
-message=$(printf "SSH server is running. Sleep mode disabled.\n\nIPv4 addresses: %s\nIPv6 addresses: %s\n\nPort: 22\nUsername: sdcard or deck\n\nClose window to stop SSH" "$ip4" "$ip6")
+message=$(printf "SSH server is running. Sleep mode disabled.\n\nIPv4: %s\nIPv6: %s\n\nPort: 22\nUser: sdcard/deck\n\nClose window to stop SSH" "$ip4" "$ip6")
 zenity --info --title="SSH Server Status" --text="$message" --no-wrap --ok-label="Stop SSH"
 
 cleanup
